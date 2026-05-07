@@ -2,10 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Image Scale Measure Tool</title>
   <style>
     * { box-sizing: border-box; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
 
     body {
       margin: 0;
@@ -14,9 +20,11 @@
       background: #d9d9d9;
       color: #000;
       height: 100vh;
+      height: 100dvh;
       display: grid;
       grid-template-rows: auto 1fr;
       overflow: hidden;
+      overscroll-behavior: none;
     }
 
     header {
@@ -30,9 +38,7 @@
       z-index: 5;
     }
 
-    label, button, input, select {
-      font: inherit;
-    }
+    label, button, input, select { font: inherit; }
 
     input, select, button {
       border: 1px solid #777;
@@ -54,6 +60,7 @@
       min-height: 24px;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
       white-space: nowrap;
+      touch-action: manipulation;
     }
 
     button:active,
@@ -90,6 +97,9 @@
       border-top: 1px solid #fff;
       outline: none;
       min-width: 0;
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: auto;
     }
 
     #stageWrap.dragover {
@@ -107,6 +117,9 @@
       cursor: crosshair;
       transform-origin: top left;
       user-select: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #canvas {
@@ -114,16 +127,20 @@
       inset: 0;
       display: block;
       background: #fff;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #overlaySvg {
-    position: absolute;
-    inset: 0;
-    display: block;
-    overflow: visible;
-    pointer-events: none;
-    shape-rendering: crispEdges;
-  }
+      position: absolute;
+      inset: 0;
+      display: block;
+      overflow: visible;
+      pointer-events: none;
+      shape-rendering: crispEdges;
+      touch-action: none;
+    }
 
     aside {
       position: relative;
@@ -133,6 +150,7 @@
       overflow: auto;
       min-width: 0;
       z-index: 3;
+      overscroll-behavior: contain;
     }
 
     main.sidebar-hidden aside {
@@ -149,6 +167,7 @@
       cursor: col-resize;
       z-index: 9;
       background: transparent;
+      touch-action: none;
     }
 
     #sideResizeHandle:hover,
@@ -229,80 +248,82 @@
     }
 
     @media (max-width: 850px) {
-  main {
-    --bottom-height: 300px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) var(--bottom-height);
-  }
+      header {
+        max-height: 34dvh;
+        overflow: auto;
+      }
 
-  main.sidebar-hidden {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) 0px;
-  }
+      input[type="file"] {
+        max-width: 170px;
+      }
 
-  aside {
-    border-left: none;
-    border-top: 1px solid #888;
-    max-height: none;
-  }
+      .hint {
+        width: 100%;
+        margin-left: 0;
+      }
 
-  main.sidebar-hidden aside {
-    opacity: 0;
-    pointer-events: none;
-  }
+      main {
+        --bottom-height: 300px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) var(--bottom-height);
+      }
 
-  #sideResizeHandle {
-    display: block;
-    left: 0;
-    right: 0;
-    top: calc(100% - var(--bottom-height) - 9px);
-    bottom: auto;
-    width: auto;
-    height: 18px;
-    cursor: row-resize;
-    z-index: 49;
-    touch-action: none;
-  }
+      main.sidebar-hidden {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) 0px;
+      }
 
-  #sideResizeHandle:hover,
-  body.resizing-sidebar #sideResizeHandle {
-    background: rgba(0,0,0,0.10);
-  }
+      aside {
+        border-left: none;
+        border-top: 1px solid #888;
+        max-height: none;
+      }
 
-  main.sidebar-hidden #sideResizeHandle {
-    display: none;
-  }
+      #sideResizeHandle {
+        display: block;
+        left: 0;
+        right: 0;
+        top: calc(100% - var(--bottom-height) - 9px);
+        bottom: auto;
+        width: auto;
+        height: 18px;
+        cursor: row-resize;
+        z-index: 49;
+        touch-action: none;
+      }
 
-  #sidebarToggle {
-    position: absolute;
-    left: 50%;
-    right: auto;
-    top: calc(100% - var(--bottom-height) - 26px);
-    bottom: auto;
-    width: 96px;
-    height: 26px;
-    transform: translateX(-50%);
-    z-index: 51;
-    border-radius: 4px 4px 0 0;
-    touch-action: manipulation;
-  }
+      #sideResizeHandle:hover,
+      body.resizing-sidebar #sideResizeHandle {
+        background: rgba(0,0,0,0.10);
+      }
 
-  main.sidebar-hidden #sidebarToggle {
-    position: absolute;
-    left: 50%;
-    right: auto;
-    top: auto;
-    bottom: 0;
-    transform: translateX(-50%);
-    z-index: 51;
-    border-radius: 4px 4px 0 0;
-  }
+      #sidebarToggle {
+        position: absolute;
+        left: 50%;
+        right: auto;
+        top: calc(100% - var(--bottom-height) - 26px);
+        bottom: auto;
+        width: 96px;
+        height: 26px;
+        transform: translateX(-50%);
+        z-index: 51;
+        border-radius: 4px 4px 0 0;
+        touch-action: manipulation;
+      }
 
-  #sidebarToggle span {
-    font-size: 18px;
-    line-height: 18px;
-  }
-}
+      main.sidebar-hidden #sidebarToggle {
+        left: 50%;
+        right: auto;
+        top: auto;
+        bottom: 0;
+        transform: translateX(-50%);
+      }
+
+      #sidebarToggle span {
+        font-size: 18px;
+        line-height: 18px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -381,10 +402,17 @@
           S = Scale<br>
           M = Measure<br><br>
 
-          <strong>Navigation</strong><br>
+          <strong>Desktop navigation</strong><br>
           Ctrl + Mouse Wheel = Zoom to Cursor<br>
           Shift + Middle Mouse Drag = Pan<br>
           Mouse Wheel / Scrollbars = Scroll<br><br>
+
+          <strong>Mobile navigation</strong><br>
+          Scale / Measure mode + one finger drag = Draw line<br>
+          Select mode + one finger drag empty image = Pan<br>
+          Select mode + tap line = Select<br>
+          Select mode + drag endpoint = Edit endpoint<br>
+          Two fingers on image = Pinch zoom + pan<br><br>
 
           <strong>Editing</strong><br>
           Click line = Select, only while in Select mode<br>
@@ -400,7 +428,7 @@
 
           <strong>Menus</strong><br>
           Drag right border of menu = Resize sidebar<br>
-          Drag bottom-right of each menu island = Resize island<br>
+          Drag bottom menu edge on mobile = Resize menu<br>
           Side arrow = Hide / show menu<br><br>
 
           <strong>Image Input</strong><br>
@@ -467,27 +495,20 @@
     let gridSizeUserEdited = false;
     let endpointDrag = null;
 
+    let activePointerId = null;
+    let activePointerType = null;
+    let activePointers = new Map();
+    let pinch = null;
+    let skipEndAfterPinch = false;
+
     const unitsBySystem = {
       metric: [
-        ['pm', 'pm'],
-        ['nm', 'nm'],
-        ['um', 'µm'],
-        ['mm', 'mm'],
-        ['cm', 'cm'],
-        ['m', 'm'],
-        ['km', 'km'],
-        ['Mm', 'Mm'],
-        ['Gm', 'Gm']
+        ['pm', 'pm'], ['nm', 'nm'], ['um', 'µm'], ['mm', 'mm'], ['cm', 'cm'],
+        ['m', 'm'], ['km', 'km'], ['Mm', 'Mm'], ['Gm', 'Gm']
       ],
       imperial: [
-        ['thou', 'thou'],
-        ['mil', 'mil'],
-        ['in', 'in'],
-        ['ft', 'ft'],
-        ['yd', 'yd'],
-        ['chain', 'chain'],
-        ['fur', 'furlong'],
-        ['mi', 'mi']
+        ['thou', 'thou'], ['mil', 'mil'], ['in', 'in'], ['ft', 'ft'], ['yd', 'yd'],
+        ['chain', 'chain'], ['fur', 'furlong'], ['mi', 'mi']
       ]
     };
 
@@ -603,11 +624,18 @@
       canvas.width = 900;
       canvas.height = 600;
       zoom = 1;
+      activePointers.clear();
+      pinch = null;
+      activePointerId = null;
       syncStageSize();
       setMode('scale');
       updateMeasurementsList();
       redraw();
       statusEl.textContent = 'Cleared all.';
+    }
+
+    function touchLikely() {
+      return navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
     }
 
     function setMode(nextMode) {
@@ -617,7 +645,9 @@
       measureBtn.classList.toggle('active', mode === 'measure');
 
       if (mode === 'select') {
-        statusEl.textContent = 'Select lines.';
+        statusEl.textContent = touchLikely()
+          ? 'Select. Drag empty image to pan, tap lines to select, drag endpoints to edit.'
+          : 'Select lines.';
       } else if (mode === 'scale') {
         statusEl.textContent = 'Draw known scale length.';
       } else {
@@ -625,14 +655,9 @@
       }
     }
 
-    function applyZoom() {
-      syncStageSize();
-      redraw();
-    }
-
     function setZoom(nextZoom, clientX, clientY) {
       const oldZoom = zoom;
-      const newZoom = Math.min(8, Math.max(0.05, nextZoom));
+      const newZoom = Math.min(16, Math.max(0.03, nextZoom));
       if (newZoom === oldZoom) return;
 
       const rect = canvas.getBoundingClientRect();
@@ -654,10 +679,14 @@
     }
 
     function getMousePos(evt) {
+      return clientToImage(evt.clientX, evt.clientY);
+    }
+
+    function clientToImage(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       return {
-        x: (evt.clientX - rect.left) * (canvas.width / rect.width),
-        y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
       };
     }
 
@@ -683,36 +712,29 @@
 
     function niceNumber(value) {
       if (!Number.isFinite(value) || value <= 0) return 1;
-
       const exponent = Math.floor(Math.log10(value));
       const fraction = value / Math.pow(10, exponent);
       let niceFraction;
-
       if (fraction <= 1) niceFraction = 1;
       else if (fraction <= 2) niceFraction = 2;
       else if (fraction <= 5) niceFraction = 5;
       else niceFraction = 10;
-
       return niceFraction * Math.pow(10, exponent);
     }
 
     function inferGridSizeFromScale(force = false) {
       if (!force && gridSizeUserEdited) return;
       if (!scaleLine) return;
-
       const scalePx = distance(scaleLine.a, scaleLine.b);
       const known = Number(knownLengthInput.value);
       if (!scalePx || !known) return;
-
       const targetGridPx = 80;
       const unitsPerPx = known / scalePx;
-      const inferred = niceNumber(targetGridPx * unitsPerPx);
-      gridSizeInput.value = String(inferred);
+      gridSizeInput.value = String(niceNumber(targetGridPx * unitsPerPx));
     }
 
     function snapMeasurementPointToGrid(point) {
       if (!gridSnapEnabledInput.checked || !scaleLine) return point;
-
       const gridSize = Number(gridSizeInput.value);
       const pxSpacing = unitToPx(gridSize);
       if (!pxSpacing || pxSpacing <= 0) return point;
@@ -736,23 +758,19 @@
       let snapped = current;
 
       if (evt && evt.shiftKey) {
-        if (Math.abs(dx) >= Math.abs(dy)) {
-          snapped = { x: current.x, y: start.y };
-        } else {
-          snapped = { x: start.x, y: current.y };
-        }
+        snapped = Math.abs(dx) >= Math.abs(dy)
+          ? { x: current.x, y: start.y }
+          : { x: start.x, y: current.y };
 
         return mode === 'measure' ? snapMeasurementPointToGrid(snapped) : snapped;
       }
 
       if (angleSnapEnabledInput.checked) {
         const stepDeg = Number(angleSnapStepInput.value);
-
         if (Number.isFinite(stepDeg) && stepDeg > 0) {
           const stepRad = stepDeg * Math.PI / 180;
           const angle = Math.atan2(dy, dx);
           const snappedAngle = Math.round(angle / stepRad) * stepRad;
-
           snapped = {
             x: start.x + Math.cos(snappedAngle) * len,
             y: start.y + Math.sin(snappedAngle) * len
@@ -765,6 +783,9 @@
 
     function formatLength(value) {
       const unit = unitInput.value.trim() || 'units';
+      if ((Math.abs(value) > 0 && Math.abs(value) < 0.001) || Math.abs(value) >= 100000) {
+        return `${value.toExponential(3)} ${unit}`;
+      }
       return `${value.toFixed(3)} ${unit}`;
     }
 
@@ -784,7 +805,7 @@
     }
 
     function hitTestLine(p) {
-      const tolerance = Math.max(5, 9 / zoom);
+      const tolerance = Math.max(6, 14 / zoom);
       let best = null;
       let bestDist = Infinity;
 
@@ -806,32 +827,33 @@
 
       return best;
     }
+
     function hitTestEndpoint(p) {
-    const tolerance = Math.max(6, 11 / zoom);
-    let best = null;
-    let bestDist = Infinity;
+      const tolerance = Math.max(8, 18 / zoom);
+      let best = null;
+      let bestDist = Infinity;
 
-    function checkPoint(type, index, endpoint, point) {
-      const d = distance(p, point);
-      if (d < tolerance && d < bestDist) {
-        best = { type, index, endpoint };
-        bestDist = d;
+      function checkPoint(type, index, endpoint, point) {
+        const d = distance(p, point);
+        if (d < tolerance && d < bestDist) {
+          best = { type, index, endpoint };
+          bestDist = d;
+        }
       }
+
+      if (scaleLine) {
+        checkPoint('scale', null, 'a', scaleLine.a);
+        checkPoint('scale', null, 'b', scaleLine.b);
+      }
+
+      measures.forEach((line, index) => {
+        checkPoint('measure', index, 'a', line.a);
+        checkPoint('measure', index, 'b', line.b);
+      });
+
+      return best;
     }
 
-    if (scaleLine) {
-      checkPoint('scale', null, 'a', scaleLine.a);
-      checkPoint('scale', null, 'b', scaleLine.b);
-    }
-
-    measures.forEach((line, index) => {
-      checkPoint('measure', index, 'a', line.a);
-      checkPoint('measure', index, 'b', line.b);
-    });
-
-    return best;
-  }
-  
     function isSelected(type, index) {
       if (!selected) return false;
       if (type === 'scale') return selected.type === 'scale';
@@ -842,13 +864,8 @@
       if (!selected) return;
       pushUndo();
 
-      if (selected.type === 'scale') {
-        scaleLine = null;
-      }
-
-      if (selected.type === 'measure') {
-        measures.splice(selected.index, 1);
-      }
+      if (selected.type === 'scale') scaleLine = null;
+      if (selected.type === 'measure') measures.splice(selected.index, 1);
 
       selected = null;
       updateMeasurementsList();
@@ -860,6 +877,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (hasImage) {
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       } else {
         ctx.fillStyle = '#fff';
@@ -910,7 +928,6 @@
       ctx.restore();
 
       const boxW = textW + pad * 2;
-
       const g = svgEl('g');
 
       g.appendChild(svgEl('line', {
@@ -979,62 +996,47 @@
     }
 
     function drawMeasurementGrid() {
-    if (!gridEnabledInput.checked || !scaleLine) return;
+      if (!gridEnabledInput.checked || !scaleLine) return;
 
-    const gridSize = Number(gridSizeInput.value);
-    const pxSpacing = unitToPx(gridSize);
-    if (!pxSpacing || pxSpacing <= 0) return;
+      const gridSize = Number(gridSizeInput.value);
+      const pxSpacing = unitToPx(gridSize);
+      if (!pxSpacing || pxSpacing <= 0) return;
 
-    const screenSpacing = pxSpacing * zoom;
+      const screenSpacing = pxSpacing * zoom;
+      if (screenSpacing < 4) return;
 
-    // Hide only when the grid would be too dense on screen, not when it is small in image pixels.
-    if (screenSpacing < 4) return;
+      const estimatedLineCount = (canvas.width / pxSpacing) + (canvas.height / pxSpacing);
+      if (estimatedLineCount > 2500) {
+        statusEl.textContent = 'Grid hidden: grid size too small for current zoom. Zoom in more or increase grid size.';
+        return;
+      }
 
-    // Safety cap so tiny grid sizes do not create thousands of SVG lines and freeze the page.
-    const estimatedLineCount = (canvas.width / pxSpacing) + (canvas.height / pxSpacing);
-    if (estimatedLineCount > 2500) {
-      statusEl.textContent = 'Grid hidden: grid size too small for current zoom. Zoom in more or increase grid size.';
-      return;
+      const group = svgEl('g', {
+        stroke: 'rgba(0,0,0,0.18)',
+        'stroke-width': 1,
+        'vector-effect': 'non-scaling-stroke',
+        'shape-rendering': 'crispEdges'
+      });
+
+      const startX = ((scaleLine.a.x % pxSpacing) + pxSpacing) % pxSpacing;
+      const startY = ((scaleLine.a.y % pxSpacing) + pxSpacing) % pxSpacing;
+
+      for (let x = startX; x <= canvas.width; x += pxSpacing) {
+        group.appendChild(svgEl('line', { x1: x, y1: 0, x2: x, y2: canvas.height }));
+      }
+
+      for (let y = startY; y <= canvas.height; y += pxSpacing) {
+        group.appendChild(svgEl('line', { x1: 0, y1: y, x2: canvas.width, y2: y }));
+      }
+
+      overlaySvg.appendChild(group);
     }
-
-    const group = svgEl('g', {
-      stroke: 'rgba(0,0,0,0.18)',
-      'stroke-width': 1,
-      'vector-effect': 'non-scaling-stroke',
-      'shape-rendering': 'crispEdges'
-    });
-
-    const startX = ((scaleLine.a.x % pxSpacing) + pxSpacing) % pxSpacing;
-    const startY = ((scaleLine.a.y % pxSpacing) + pxSpacing) % pxSpacing;
-
-    for (let x = startX; x <= canvas.width; x += pxSpacing) {
-      group.appendChild(svgEl('line', {
-        x1: x,
-        y1: 0,
-        x2: x,
-        y2: canvas.height
-      }));
-    }
-
-    for (let y = startY; y <= canvas.height; y += pxSpacing) {
-      group.appendChild(svgEl('line', {
-        x1: 0,
-        y1: y,
-        x2: canvas.width,
-        y2: y
-      }));
-    }
-
-    overlaySvg.appendChild(group);
-  }
 
     function redraw() {
       drawImageLayer();
       clearOverlay();
 
-      if (hasImage) {
-        drawMeasurementGrid();
-      }
+      if (hasImage) drawMeasurementGrid();
 
       if (scaleLine) {
         const real = Number(knownLengthInput.value);
@@ -1066,9 +1068,7 @@
         const real = pxToUnit(px);
         const label = mode === 'scale'
           ? `${px.toFixed(1)} px`
-          : real == null
-            ? `${px.toFixed(1)} px`
-            : formatLength(real);
+          : real == null ? `${px.toFixed(1)} px` : formatLength(real);
 
         drawLine(
           { a: dragStart, b: dragCurrent },
@@ -1114,9 +1114,7 @@
         const div = document.createElement('div');
         div.className = 'measurement';
 
-        if (isSelected('measure', i)) {
-          div.style.outline = '2px solid #0066cc';
-        }
+        if (isSelected('measure', i)) div.style.outline = '2px solid #0066cc';
 
         div.innerHTML = `<strong>M${i + 1}</strong>${px.toFixed(2)} px<br>${real == null ? 'No scale set' : formatLength(real)}`;
 
@@ -1155,6 +1153,12 @@
         selected = null;
         undoStack = [];
         redoStack = [];
+        activePointers.clear();
+        activePointerId = null;
+        endpointDrag = null;
+        pinch = null;
+        isDragging = false;
+        isPanning = false;
         URL.revokeObjectURL(url);
         setMode('scale');
         updateMeasurementsList();
@@ -1230,16 +1234,16 @@
     }
 
     function updateSidebarToggleIcon() {
-    const hidden = mainLayout.classList.contains('sidebar-hidden');
+      const hidden = mainLayout.classList.contains('sidebar-hidden');
 
-    if (isVerticalLayout()) {
-      sidebarToggleIcon.textContent = hidden ? '⌃' : '⌄';
-      sidebarToggle.title = hidden ? 'Show menu' : 'Hide menu';
-    } else {
-      sidebarToggleIcon.textContent = hidden ? '‹' : '›';
-      sidebarToggle.title = hidden ? 'Show side panel' : 'Hide side panel';
+      if (isVerticalLayout()) {
+        sidebarToggleIcon.textContent = hidden ? '⌃' : '⌄';
+        sidebarToggle.title = hidden ? 'Show menu' : 'Hide menu';
+      } else {
+        sidebarToggleIcon.textContent = hidden ? '‹' : '›';
+        sidebarToggle.title = hidden ? 'Show side panel' : 'Hide side panel';
+      }
     }
-  }
 
     function toggleSidebar() {
       mainLayout.classList.toggle('sidebar-hidden');
@@ -1252,10 +1256,314 @@
     }
 
     function setBottomPanelHeight(height) {
-    const maxHeight = Math.max(160, window.innerHeight - 150);
-    const clamped = Math.max(110, Math.min(maxHeight, height));
-    mainLayout.style.setProperty('--bottom-height', `${clamped}px`);
-  }
+      const maxHeight = Math.max(160, window.innerHeight - 150);
+      const clamped = Math.max(110, Math.min(maxHeight, height));
+      mainLayout.style.setProperty('--bottom-height', `${clamped}px`);
+    }
+
+    function beginPan(evt) {
+      isPanning = true;
+      panStart = { x: evt.clientX, y: evt.clientY };
+      panScrollStart = { x: stageWrap.scrollLeft, y: stageWrap.scrollTop };
+      stageSurface.style.cursor = 'grabbing';
+    }
+
+    function movePan(evt) {
+      if (!isPanning || !panStart || !panScrollStart) return;
+      stageWrap.scrollLeft = panScrollStart.x - (evt.clientX - panStart.x);
+      stageWrap.scrollTop = panScrollStart.y - (evt.clientY - panStart.y);
+    }
+
+    function endPan() {
+      isPanning = false;
+      panStart = null;
+      panScrollStart = null;
+      stageSurface.style.cursor = 'crosshair';
+    }
+
+    function commitDrawnLine() {
+      if (!isDragging || !dragStart || !dragCurrent) return;
+
+      const line = { a: dragStart, b: dragCurrent };
+
+      if (distance(line.a, line.b) > 2) {
+        pushUndo();
+
+        if (mode === 'scale') {
+          scaleLine = line;
+          inferGridSizeFromScale();
+          selected = { type: 'scale' };
+          setMode('select');
+          statusEl.textContent = 'Scale set.';
+        } else {
+          measures.push(line);
+          selected = { type: 'measure', index: measures.length - 1 };
+          setMode('measure');
+          updateMeasurementsList();
+          statusEl.textContent = `M${measures.length} added.`;
+        }
+      }
+
+      isDragging = false;
+      dragStart = null;
+      dragCurrent = null;
+      redraw();
+    }
+
+    function cancelDrawnLine() {
+      isDragging = false;
+      dragStart = null;
+      dragCurrent = null;
+      redraw();
+    }
+
+    function getTouchPointers() {
+      return [...activePointers.values()].filter(p => p.pointerType === 'touch');
+    }
+
+    function getTwoPointerInfo() {
+      const touches = getTouchPointers();
+      if (touches.length < 2) return null;
+
+      const a = touches[0];
+      const b = touches[1];
+      const cx = (a.clientX + b.clientX) / 2;
+      const cy = (a.clientY + b.clientY) / 2;
+      const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+
+      return { a, b, cx, cy, dist };
+    }
+
+    function beginPinch() {
+      const info = getTwoPointerInfo();
+      if (!info || info.dist <= 0) return;
+
+      cancelDrawnLine();
+
+      if (endpointDrag) {
+        endpointDrag = null;
+        redraw();
+      }
+
+      if (isPanning) endPan();
+
+      pinch = {
+        startDist: info.dist,
+        startZoom: zoom,
+        imageCenter: clientToImage(info.cx, info.cy)
+      };
+
+      skipEndAfterPinch = true;
+      statusEl.textContent = 'Pinch zoom / pan.';
+    }
+
+    function updatePinch() {
+      if (!pinch) return;
+
+      const info = getTwoPointerInfo();
+      if (!info || info.dist <= 0) return;
+
+      const nextZoom = pinch.startZoom * (info.dist / pinch.startDist);
+      setZoom(nextZoom, info.cx, info.cy);
+    }
+
+    function clearEndedPinch() {
+      if (getTouchPointers().length < 2) pinch = null;
+    }
+
+    function handleCanvasPointerDown(evt) {
+      if (evt.target !== canvas) return;
+
+      activePointers.set(evt.pointerId, {
+        pointerId: evt.pointerId,
+        pointerType: evt.pointerType,
+        clientX: evt.clientX,
+        clientY: evt.clientY
+      });
+
+      if (evt.pointerType === 'touch') {
+        evt.preventDefault();
+
+        if (getTouchPointers().length >= 2) {
+          beginPinch();
+          return;
+        }
+      }
+
+      if (activePointerId !== null || pinch) return;
+
+      if (evt.pointerType === 'mouse' && evt.button === 1 && evt.shiftKey) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        activePointerId = evt.pointerId;
+        activePointerType = evt.pointerType;
+        canvas.setPointerCapture(evt.pointerId);
+        beginPan(evt);
+        return;
+      }
+
+      if (!hasImage) return;
+      if (evt.pointerType === 'mouse' && evt.button !== 0) return;
+
+      activePointerId = evt.pointerId;
+      activePointerType = evt.pointerType;
+      canvas.setPointerCapture(evt.pointerId);
+
+      const p = getMousePos(evt);
+
+      if (mode === 'select') {
+        const endpointHit = hitTestEndpoint(p);
+
+        if (endpointHit) {
+          evt.preventDefault();
+          pushUndo();
+          endpointDrag = endpointHit;
+
+          selected = endpointHit.type === 'scale'
+            ? { type: 'scale' }
+            : { type: 'measure', index: endpointHit.index };
+
+          updateMeasurementsList();
+          redraw();
+          statusEl.textContent = 'Dragging endpoint.';
+          return;
+        }
+
+        const lineHit = hitTestLine(p);
+
+        if (lineHit) {
+          evt.preventDefault();
+          selected = lineHit;
+          updateMeasurementsList();
+          redraw();
+          statusEl.textContent = selected.type === 'scale'
+            ? 'Scale selected.'
+            : `M${selected.index + 1} selected.`;
+          return;
+        }
+
+        selected = null;
+        updateMeasurementsList();
+        redraw();
+
+        if (evt.pointerType === 'touch') {
+          beginPan(evt);
+          statusEl.textContent = 'Panning image.';
+        }
+
+        return;
+      }
+
+      evt.preventDefault();
+      selected = null;
+      isDragging = true;
+      dragStart = mode === 'measure' ? snapMeasurementPointToGrid(p) : p;
+      dragCurrent = dragStart;
+      redraw();
+    }
+
+    function handleCanvasPointerMove(evt) {
+      if (activePointers.has(evt.pointerId)) {
+        activePointers.set(evt.pointerId, {
+          pointerId: evt.pointerId,
+          pointerType: evt.pointerType,
+          clientX: evt.clientX,
+          clientY: evt.clientY
+        });
+      }
+
+      if (pinch) {
+        evt.preventDefault();
+        updatePinch();
+        return;
+      }
+
+      if (evt.pointerId !== activePointerId) return;
+      if (evt.pointerType === 'touch') evt.preventDefault();
+
+      if (isPanning) {
+        movePan(evt);
+        return;
+      }
+
+      if (endpointDrag) {
+        let p = getMousePos(evt);
+
+        if (endpointDrag.type === 'measure') {
+          p = snapMeasurementPointToGrid(p);
+        }
+
+        if (endpointDrag.type === 'scale') {
+          scaleLine[endpointDrag.endpoint] = p;
+          inferGridSizeFromScale();
+        } else {
+          measures[endpointDrag.index][endpointDrag.endpoint] = p;
+        }
+
+        updateMeasurementsList();
+        redraw();
+        return;
+      }
+
+      if (!isDragging) return;
+      dragCurrent = snapPoint(dragStart, getMousePos(evt), evt);
+      redraw();
+    }
+
+    function handleCanvasPointerUp(evt) {
+      activePointers.delete(evt.pointerId);
+      clearEndedPinch();
+
+      if (evt.pointerType === 'touch') evt.preventDefault();
+
+      if (evt.pointerId !== activePointerId) {
+        return;
+      }
+
+      if (skipEndAfterPinch) {
+        skipEndAfterPinch = false;
+        cancelDrawnLine();
+        if (isPanning) endPan();
+        endpointDrag = null;
+      } else if (isPanning) {
+        endPan();
+        statusEl.textContent = 'Ready.';
+      } else if (endpointDrag) {
+        endpointDrag = null;
+        updateMeasurementsList();
+        redraw();
+        statusEl.textContent = 'Endpoint moved.';
+      } else if (isDragging) {
+        commitDrawnLine();
+      }
+
+      try {
+        canvas.releasePointerCapture(evt.pointerId);
+      } catch (_) {}
+
+      activePointerId = null;
+      activePointerType = null;
+    }
+
+    function handleCanvasPointerCancel(evt) {
+      activePointers.delete(evt.pointerId);
+      pinch = null;
+      cancelDrawnLine();
+
+      if (isPanning) endPan();
+      if (endpointDrag) endpointDrag = null;
+
+      try {
+        canvas.releasePointerCapture(evt.pointerId);
+      } catch (_) {}
+
+      if (evt.pointerId === activePointerId) {
+        activePointerId = null;
+        activePointerType = null;
+      }
+
+      redraw();
+    }
 
     imageInput.addEventListener('change', () => {
       loadImageFile(imageInput.files[0]);
@@ -1270,218 +1578,55 @@
     resetBtn.addEventListener('click', clearAll);
     sidebarToggle.addEventListener('click', toggleSidebar);
 
-   sideResizeHandle.addEventListener('pointerdown', evt => {
-    evt.preventDefault();
-    evt.stopPropagation();
-
-    isResizingSidebar = true;
-    document.body.classList.add('resizing-sidebar');
-    sideResizeHandle.setPointerCapture(evt.pointerId);
-  });
-
-  window.addEventListener('pointermove', evt => {
-    if (!isResizingSidebar) return;
-
-    evt.preventDefault();
-
-    const rect = mainLayout.getBoundingClientRect();
-
-    if (isVerticalLayout()) {
-      setBottomPanelHeight(rect.bottom - evt.clientY);
-    } else {
-      setSidebarWidth(rect.right - evt.clientX);
-    }
-  });
-
-  window.addEventListener('pointerup', evt => {
-    if (!isResizingSidebar) return;
-
-    isResizingSidebar = false;
-    document.body.classList.remove('resizing-sidebar');
-
-    try {
-      sideResizeHandle.releasePointerCapture(evt.pointerId);
-    } catch (_) {}
-  });
-
-  window.addEventListener('pointercancel', evt => {
-    if (!isResizingSidebar) return;
-
-    isResizingSidebar = false;
-    document.body.classList.remove('resizing-sidebar');
-
-    try {
-      sideResizeHandle.releasePointerCapture(evt.pointerId);
-    } catch (_) {}
-  });
-
-    canvas.addEventListener('mousedown', evt => {
-    if (evt.button === 1 && evt.shiftKey) {
+    sideResizeHandle.addEventListener('pointerdown', evt => {
       evt.preventDefault();
       evt.stopPropagation();
-      isPanning = true;
-      panStart = { x: evt.clientX, y: evt.clientY };
-      panScrollStart = { x: stageWrap.scrollLeft, y: stageWrap.scrollTop };
-      stageSurface.style.cursor = 'grabbing';
-      return;
-    }
 
-    if (!hasImage || evt.button !== 0) return;
+      isResizingSidebar = true;
+      document.body.classList.add('resizing-sidebar');
+      sideResizeHandle.setPointerCapture(evt.pointerId);
+    });
 
-    const p = getMousePos(evt);
+    window.addEventListener('pointermove', evt => {
+      if (!isResizingSidebar) return;
 
-    if (mode === 'select') {
-      const endpointHit = hitTestEndpoint(p);
-
-      if (endpointHit) {
-        pushUndo();
-        endpointDrag = endpointHit;
-
-        if (endpointHit.type === 'scale') {
-          selected = { type: 'scale' };
-        } else {
-          selected = { type: 'measure', index: endpointHit.index };
-        }
-
-        updateMeasurementsList();
-        redraw();
-        statusEl.textContent = 'Dragging endpoint.';
-        return;
-      }
-
-      const lineHit = hitTestLine(p);
-
-      if (lineHit) {
-        selected = lineHit;
-        updateMeasurementsList();
-        redraw();
-        statusEl.textContent = selected.type === 'scale'
-          ? 'Scale selected.'
-          : `M${selected.index + 1} selected.`;
-        return;
-      }
-
-      selected = null;
-      updateMeasurementsList();
-      redraw();
-      return;
-    }
-
-    selected = null;
-    isDragging = true;
-    dragStart = mode === 'measure' ? snapMeasurementPointToGrid(p) : p;
-    dragCurrent = dragStart;
-    redraw();
-  });
-
-    canvas.addEventListener('mousemove', evt => {
-    if (isPanning && panStart && panScrollStart) {
       evt.preventDefault();
-      stageWrap.scrollLeft = panScrollStart.x - (evt.clientX - panStart.x);
-      stageWrap.scrollTop = panScrollStart.y - (evt.clientY - panStart.y);
-      return;
-    }
 
-    if (endpointDrag) {
-      let p = getMousePos(evt);
+      const rect = mainLayout.getBoundingClientRect();
 
-      if (endpointDrag.type === 'measure') {
-        p = snapMeasurementPointToGrid(p);
-      }
-
-      if (endpointDrag.type === 'scale') {
-        scaleLine[endpointDrag.endpoint] = p;
-        inferGridSizeFromScale();
+      if (isVerticalLayout()) {
+        setBottomPanelHeight(rect.bottom - evt.clientY);
       } else {
-        measures[endpointDrag.index][endpointDrag.endpoint] = p;
+        setSidebarWidth(rect.right - evt.clientX);
       }
+    }, { passive: false });
 
-      updateMeasurementsList();
-      redraw();
-      return;
-    }
+    window.addEventListener('pointerup', evt => {
+      if (!isResizingSidebar) return;
 
-    if (!isDragging) return;
-    dragCurrent = snapPoint(dragStart, getMousePos(evt), evt);
-    redraw();
-  });
+      isResizingSidebar = false;
+      document.body.classList.remove('resizing-sidebar');
 
-    window.addEventListener('mouseup', () => {
-    if (isPanning) {
-      isPanning = false;
-      panStart = null;
-      panScrollStart = null;
-      stageSurface.style.cursor = 'crosshair';
-      return;
-    }
-
-    if (endpointDrag) {
-      endpointDrag = null;
-      updateMeasurementsList();
-      redraw();
-      statusEl.textContent = 'Endpoint moved.';
-      return;
-    }
-
-    if (!isDragging || !dragStart || !dragCurrent) return;
-
-    const line = { a: dragStart, b: dragCurrent };
-
-    if (distance(line.a, line.b) > 2) {
-      pushUndo();
-
-      if (mode === 'scale') {
-        scaleLine = line;
-        inferGridSizeFromScale();
-        selected = { type: 'scale' };
-        setMode('select');
-        statusEl.textContent = 'Scale set.';
-      } else {
-        measures.push(line);
-        selected = { type: 'measure', index: measures.length - 1 };
-        setMode('measure');
-        updateMeasurementsList();
-        statusEl.textContent = `M${measures.length} added.`;
-      }
-    }
-
-    isDragging = false;
-    dragStart = null;
-    dragCurrent = null;
-    redraw();
-  });
-
-    knownLengthInput.addEventListener('input', () => {
-      inferGridSizeFromScale();
-      updateMeasurementsList();
-      redraw();
+      try {
+        sideResizeHandle.releasePointerCapture(evt.pointerId);
+      } catch (_) {}
     });
 
-    unitSystemInput.addEventListener('change', () => {
-      populateUnitDropdown();
-      updateMeasurementsList();
-      redraw();
+    window.addEventListener('pointercancel', evt => {
+      if (!isResizingSidebar) return;
+
+      isResizingSidebar = false;
+      document.body.classList.remove('resizing-sidebar');
+
+      try {
+        sideResizeHandle.releasePointerCapture(evt.pointerId);
+      } catch (_) {}
     });
 
-    unitInput.addEventListener('change', () => {
-      updateMeasurementsList();
-      redraw();
-    });
-
-    angleSnapEnabledInput.addEventListener('change', redraw);
-    angleSnapStepInput.addEventListener('input', redraw);
-    gridEnabledInput.addEventListener('change', () => {
-      inferGridSizeFromScale();
-      redraw();
-    });
-    gridSnapEnabledInput.addEventListener('change', () => {
-      inferGridSizeFromScale();
-      redraw();
-    });
-    gridSizeInput.addEventListener('input', () => {
-      gridSizeUserEdited = true;
-      redraw();
-    });
+    canvas.addEventListener('pointerdown', handleCanvasPointerDown, { passive: false });
+    canvas.addEventListener('pointermove', handleCanvasPointerMove, { passive: false });
+    canvas.addEventListener('pointerup', handleCanvasPointerUp, { passive: false });
+    canvas.addEventListener('pointercancel', handleCanvasPointerCancel, { passive: false });
 
     document.addEventListener('keydown', evt => {
       const active = document.activeElement;
@@ -1489,9 +1634,7 @@
       const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active?.isContentEditable;
       const key = evt.key.toLowerCase();
 
-      if ((evt.ctrlKey || evt.metaKey) && key === 'v') {
-        return;
-      }
+      if ((evt.ctrlKey || evt.metaKey) && key === 'v') return;
 
       if (!typing && (evt.ctrlKey || evt.metaKey) && key === 'delete') {
         evt.preventDefault();
@@ -1597,7 +1740,45 @@
       if (!loaded) statusEl.textContent = 'Dropped item was not an image.';
     });
 
-    window.addEventListener('resize', updateSidebarToggleIcon);
+    window.addEventListener('resize', () => {
+      updateSidebarToggleIcon();
+      redraw();
+    });
+
+    knownLengthInput.addEventListener('input', () => {
+      inferGridSizeFromScale();
+      updateMeasurementsList();
+      redraw();
+    });
+
+    unitSystemInput.addEventListener('change', () => {
+      populateUnitDropdown();
+      updateMeasurementsList();
+      redraw();
+    });
+
+    unitInput.addEventListener('change', () => {
+      updateMeasurementsList();
+      redraw();
+    });
+
+    angleSnapEnabledInput.addEventListener('change', redraw);
+    angleSnapStepInput.addEventListener('input', redraw);
+
+    gridEnabledInput.addEventListener('change', () => {
+      inferGridSizeFromScale();
+      redraw();
+    });
+
+    gridSnapEnabledInput.addEventListener('change', () => {
+      inferGridSizeFromScale();
+      redraw();
+    });
+
+    gridSizeInput.addEventListener('input', () => {
+      gridSizeUserEdited = true;
+      redraw();
+    });
 
     populateUnitDropdown();
     updateSidebarToggleIcon();
