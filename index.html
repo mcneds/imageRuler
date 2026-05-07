@@ -229,66 +229,72 @@
     }
 
     @media (max-width: 850px) {
-      main {
-        --bottom-height: 300px;
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) var(--bottom-height);
-      }
-
-      main.sidebar-hidden {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) 0px;
-      }
-
-      aside {
-        border-left: none;
-        border-top: 1px solid #888;
-        max-height: none;
-      }
-
-      main.sidebar-hidden aside {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      #sideResizeHandle {
-        display: block;
-        left: 0;
-        right: 0;
-        top: calc(100% - var(--bottom-height) - 3px);
-        bottom: auto;
-        width: auto;
-        height: 6px;
-        cursor: row-resize;
-      }
-
-      main.sidebar-hidden #sideResizeHandle {
-        display: none;
-      }
-
-      #sidebarToggle {
-        left: 50%;
-        right: auto;
-        top: calc(100% - var(--bottom-height) - 24px);
-        bottom: auto;
-        width: 72px;
-        height: 24px;
-        transform: translateX(-50%);
-      }
-
-      main.sidebar-hidden #sidebarToggle {
-        left: 50%;
-        right: auto;
-        top: auto;
-        bottom: 0;
-        transform: translateX(-50%);
-      }
-
-      #sidebarToggle span {
-        font-size: 18px;
-        line-height: 18px;
-      }
+    main {
+      --bottom-height: 300px;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) var(--bottom-height);
     }
+
+    main.sidebar-hidden {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) 0px;
+    }
+
+    aside {
+      border-left: none;
+      border-top: 1px solid #888;
+      max-height: none;
+    }
+
+    main.sidebar-hidden aside {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #sideResizeHandle {
+      display: block;
+      left: 0;
+      right: 0;
+      top: calc(100% - var(--bottom-height) - 3px);
+      bottom: auto;
+      width: auto;
+      height: 6px;
+      cursor: row-resize;
+    }
+
+    main.sidebar-hidden #sideResizeHandle {
+      display: none;
+    }
+
+    #sidebarToggle {
+      position: fixed;
+      left: 50%;
+      right: auto;
+      bottom: calc(var(--bottom-height) - 1px);
+      top: auto;
+      width: 96px;
+      height: 26px;
+      transform: translateX(-50%);
+      z-index: 50;
+      border-radius: 4px 4px 0 0;
+    }
+
+    main.sidebar-hidden #sidebarToggle {
+      position: fixed;
+      left: 50%;
+      right: auto;
+      bottom: 0;
+      top: auto;
+      transform: translateX(-50%);
+      z-index: 50;
+      border-radius: 4px 4px 0 0;
+    }
+
+    #sidebarToggle span {
+      font-size: 18px;
+      line-height: 18px;
+    }
+  }
   </style>
 </head>
 <body>
@@ -1216,16 +1222,16 @@
     }
 
     function updateSidebarToggleIcon() {
-      const hidden = mainLayout.classList.contains('sidebar-hidden');
+    const hidden = mainLayout.classList.contains('sidebar-hidden');
 
-      if (isVerticalLayout()) {
-        sidebarToggleIcon.textContent = hidden ? '⌃' : '⌄';
-        sidebarToggle.title = hidden ? 'Show menu' : 'Hide menu';
-      } else {
-        sidebarToggleIcon.textContent = hidden ? '‹' : '›';
-        sidebarToggle.title = hidden ? 'Show side panel' : 'Hide side panel';
-      }
+    if (isVerticalLayout()) {
+      sidebarToggleIcon.textContent = hidden ? '⌃' : '⌄';
+      sidebarToggle.title = hidden ? 'Show menu' : 'Hide menu';
+    } else {
+      sidebarToggleIcon.textContent = hidden ? '‹' : '›';
+      sidebarToggle.title = hidden ? 'Show side panel' : 'Hide side panel';
     }
+  }
 
     function toggleSidebar() {
       mainLayout.classList.toggle('sidebar-hidden');
@@ -1238,10 +1244,10 @@
     }
 
     function setBottomPanelHeight(height) {
-      const maxHeight = Math.max(160, window.innerHeight - 150);
-      const clamped = Math.max(110, Math.min(maxHeight, height));
-      mainLayout.style.setProperty('--bottom-height', `${clamped}px`);
-    }
+    const maxHeight = Math.max(160, window.innerHeight - 150);
+    const clamped = Math.max(110, Math.min(maxHeight, height));
+    mainLayout.style.setProperty('--bottom-height', `${clamped}px`);
+  }
 
     imageInput.addEventListener('change', () => {
       loadImageFile(imageInput.files[0]);
