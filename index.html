@@ -1,0 +1,1575 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Scale Measure Tool</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 13px;
+      background: #d9d9d9;
+      color: #000;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      padding: 6px;
+      background: #d9d9d9;
+      border-bottom: 1px solid #888;
+      z-index: 5;
+    }
+
+    label, button, input, select {
+      font: inherit;
+    }
+
+    input, select, button {
+      border: 1px solid #777;
+      border-radius: 0;
+      padding: 3px 6px;
+      background: #efefef;
+      color: #000;
+    }
+
+    input[type="file"] {
+      max-width: 230px;
+      background: #d9d9d9;
+      border: none;
+      padding: 0;
+    }
+
+    button {
+      cursor: default;
+      min-height: 24px;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
+      white-space: nowrap;
+    }
+
+    button:active,
+    button.active {
+      background: #c9c9c9;
+      box-shadow: inset 1px 1px 0 #777, inset -1px -1px 0 #fff;
+    }
+
+    button.danger { color: #900; }
+
+    .hint {
+      color: #222;
+      margin-left: 6px;
+    }
+
+    main {
+      --side-width: 280px;
+      --bottom-height: 300px;
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--side-width);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    main.sidebar-hidden {
+      grid-template-columns: minmax(0, 1fr) 0px;
+    }
+
+    #stageWrap {
+      position: relative;
+      overflow: auto;
+      background: #bfbfbf;
+      border-top: 1px solid #fff;
+      outline: none;
+      min-width: 0;
+    }
+
+    #stageWrap.dragover {
+      background: #a8c6e8;
+      outline: 2px dashed #004a99;
+      outline-offset: -6px;
+    }
+
+    #stageSurface {
+      position: relative;
+      display: block;
+      margin: 8px;
+      background: #fff;
+      border: 1px solid #555;
+      cursor: crosshair;
+      transform-origin: top left;
+      user-select: none;
+    }
+
+    #canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      background: #fff;
+    }
+
+    #overlaySvg {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: visible;
+    pointer-events: none;
+    shape-rendering: crispEdges;
+  }
+
+    aside {
+      position: relative;
+      border-left: 1px solid #888;
+      background: #d9d9d9;
+      padding: 6px;
+      overflow: auto;
+      min-width: 0;
+      z-index: 3;
+    }
+
+    main.sidebar-hidden aside {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #sideResizeHandle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: calc(var(--side-width) - 3px);
+      width: 6px;
+      cursor: col-resize;
+      z-index: 9;
+      background: transparent;
+    }
+
+    #sideResizeHandle:hover,
+    body.resizing-sidebar #sideResizeHandle {
+      background: rgba(0,0,0,0.12);
+    }
+
+    main.sidebar-hidden #sideResizeHandle {
+      display: none;
+    }
+
+    #sidebarToggle {
+      position: absolute;
+      right: var(--side-width);
+      top: 8px;
+      z-index: 10;
+      width: 22px;
+      height: 46px;
+      padding: 0;
+      background: #efefef;
+      border: 1px solid #777;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
+    }
+
+    main.sidebar-hidden #sidebarToggle {
+      right: 0;
+    }
+
+    #sidebarToggle span {
+      display: block;
+      font-size: 22px;
+      line-height: 20px;
+    }
+
+    .box {
+      border: 1px solid #888;
+      padding: 6px;
+      margin-bottom: 6px;
+      background: #d9d9d9;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #aaa;
+      resize: vertical;
+      overflow: auto;
+      min-height: 46px;
+      max-height: 70vh;
+    }
+
+    .box h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 85px;
+      gap: 5px;
+      align-items: center;
+      margin: 5px 0;
+    }
+
+    .small {
+      color: #222;
+      font-size: 12px;
+      line-height: 1.3;
+      margin: 6px 0 0;
+    }
+
+    .measurement {
+      padding: 5px;
+      border: 1px solid #888;
+      margin-bottom: 5px;
+      background: #efefef;
+    }
+
+    .measurement strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    @media (max-width: 850px) {
+      main {
+        --bottom-height: 300px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) var(--bottom-height);
+      }
+
+      main.sidebar-hidden {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) 0px;
+      }
+
+      aside {
+        border-left: none;
+        border-top: 1px solid #888;
+        max-height: none;
+      }
+
+      main.sidebar-hidden aside {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #sideResizeHandle {
+        display: block;
+        left: 0;
+        right: 0;
+        top: calc(100% - var(--bottom-height) - 3px);
+        bottom: auto;
+        width: auto;
+        height: 6px;
+        cursor: row-resize;
+      }
+
+      main.sidebar-hidden #sideResizeHandle {
+        display: none;
+      }
+
+      #sidebarToggle {
+        left: 50%;
+        right: auto;
+        top: calc(100% - var(--bottom-height) - 24px);
+        bottom: auto;
+        width: 72px;
+        height: 24px;
+        transform: translateX(-50%);
+      }
+
+      main.sidebar-hidden #sidebarToggle {
+        left: 50%;
+        right: auto;
+        top: auto;
+        bottom: 0;
+        transform: translateX(-50%);
+      }
+
+      #sidebarToggle span {
+        font-size: 18px;
+        line-height: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <input id="imageInput" type="file" accept="image/*" />
+    <button id="pasteBtn">Paste Image</button>
+    <button id="selectBtn" class="active">Select (V)</button>
+    <button id="scaleBtn">Scale (S)</button>
+    <button id="measureBtn">Measure (M)</button>
+    <button id="deleteSelectedBtn">Delete Selected (Del)</button>
+    <button id="clearMeasuresBtn">Clear Measures (Ctrl+Del)</button>
+    <button id="resetBtn" class="danger">Clear All (Ctrl+Backspace)</button>
+    <span class="hint" id="status">Upload image, paste image, or drag image in.</span>
+  </header>
+
+  <main id="mainLayout">
+    <div id="stageWrap" tabindex="0" title="Paste or drop image here">
+      <div id="stageSurface">
+        <canvas id="canvas" width="900" height="600"></canvas>
+        <svg id="overlaySvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div id="sideResizeHandle" title="Drag to resize menu"></div>
+
+    <button id="sidebarToggle" title="Hide side panel">
+      <span id="sidebarToggleIcon">›</span>
+    </button>
+
+    <aside id="sidePanel">
+      <div class="box">
+        <h3>Scale</h3>
+        <div class="row">
+          <label for="knownLength">Known length</label>
+          <input id="knownLength" type="number" step="any" min="0" value="100" />
+        </div>
+        <div class="row">
+          <label for="unitSystem">System</label>
+          <select id="unitSystem">
+            <option value="metric" selected>Metric</option>
+            <option value="imperial">Imperial</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="unit">Unit</label>
+          <select id="unit"></select>
+        </div>
+        <div class="row">
+          <label for="angleSnapEnabled">Angular snap</label>
+          <input id="angleSnapEnabled" type="checkbox" checked />
+        </div>
+        <div class="row">
+          <label for="angleSnapStep">Snap step °</label>
+          <input id="angleSnapStep" type="number" step="any" min="0.1" max="180" value="45" />
+        </div>
+        <div class="row">
+          <label for="gridEnabled">Measurement grid</label>
+          <input id="gridEnabled" type="checkbox" />
+        </div>
+        <div class="row">
+          <label for="gridSnapEnabled">Snap measures to grid</label>
+          <input id="gridSnapEnabled" type="checkbox" />
+        </div>
+        <div class="row">
+          <label for="gridSize">Grid size</label>
+          <input id="gridSize" type="number" step="any" min="0" value="10" />
+        </div>
+        <p class="small" id="scaleInfo">No scale line.</p>
+      </div>
+
+      <div class="box">
+        <h3>Navigation / Controls</h3>
+        <div class="small">
+          <strong>Modes</strong><br>
+          V = Select<br>
+          S = Scale<br>
+          M = Measure<br><br>
+
+          <strong>Navigation</strong><br>
+          Ctrl + Mouse Wheel = Zoom to Cursor<br>
+          Shift + Middle Mouse Drag = Pan<br>
+          Mouse Wheel / Scrollbars = Scroll<br><br>
+
+          <strong>Editing</strong><br>
+          Click line = Select, only while in Select mode<br>
+          Shift while drawing = Lock to closest X/Y axis<br>
+          Angular snap toggle = Snap to chosen angle step<br>
+          Measurement grid toggle = Show grid using real units<br>
+          Snap measures to grid = Snap measurement endpoints to grid<br>
+          Delete / Backspace = Delete Selected<br>
+          Ctrl+Delete = Clear Measurements<br>
+          Ctrl+Backspace = Clear All / Reset<br>
+          Ctrl+Z = Undo<br>
+          Ctrl+Y / Ctrl+Shift+Z = Redo<br><br>
+
+          <strong>Menus</strong><br>
+          Drag right border of menu = Resize sidebar<br>
+          Drag bottom-right of each menu island = Resize island<br>
+          Side arrow = Hide / show menu<br><br>
+
+          <strong>Image Input</strong><br>
+          Paste Image button<br>
+          Ctrl+V Paste<br>
+          Drag & Drop Image
+        </div>
+      </div>
+
+      <div class="box">
+        <h3>Measurements</h3>
+        <div id="measurements"></div>
+        <p class="small">Yellow = scale. Blue = measurement. Drag point to point.</p>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const pasteBtn = document.getElementById('pasteBtn');
+    const selectBtn = document.getElementById('selectBtn');
+    const scaleBtn = document.getElementById('scaleBtn');
+    const measureBtn = document.getElementById('measureBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const clearMeasuresBtn = document.getElementById('clearMeasuresBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const knownLengthInput = document.getElementById('knownLength');
+    const unitSystemInput = document.getElementById('unitSystem');
+    const unitInput = document.getElementById('unit');
+    const angleSnapEnabledInput = document.getElementById('angleSnapEnabled');
+    const angleSnapStepInput = document.getElementById('angleSnapStep');
+    const gridEnabledInput = document.getElementById('gridEnabled');
+    const gridSnapEnabledInput = document.getElementById('gridSnapEnabled');
+    const gridSizeInput = document.getElementById('gridSize');
+    const scaleInfo = document.getElementById('scaleInfo');
+    const measurementsDiv = document.getElementById('measurements');
+    const statusEl = document.getElementById('status');
+    const stageWrap = document.getElementById('stageWrap');
+    const stageSurface = document.getElementById('stageSurface');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const overlaySvg = document.getElementById('overlaySvg');
+    const mainLayout = document.getElementById('mainLayout');
+    const sideResizeHandle = document.getElementById('sideResizeHandle');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+
+    let img = new Image();
+    let hasImage = false;
+    let mode = 'select';
+    let isDragging = false;
+    let dragStart = null;
+    let dragCurrent = null;
+    let scaleLine = null;
+    let measures = [];
+    let undoStack = [];
+    let redoStack = [];
+    let isPanning = false;
+    let panStart = null;
+    let panScrollStart = null;
+    let zoom = 1;
+    let selected = null;
+    let isResizingSidebar = false;
+    let gridSizeUserEdited = false;
+    let endpointDrag = null;
+
+    const unitsBySystem = {
+      metric: [
+        ['pm', 'pm'],
+        ['nm', 'nm'],
+        ['um', 'µm'],
+        ['mm', 'mm'],
+        ['cm', 'cm'],
+        ['m', 'm'],
+        ['km', 'km'],
+        ['Mm', 'Mm'],
+        ['Gm', 'Gm']
+      ],
+      imperial: [
+        ['thou', 'thou'],
+        ['mil', 'mil'],
+        ['in', 'in'],
+        ['ft', 'ft'],
+        ['yd', 'yd'],
+        ['chain', 'chain'],
+        ['fur', 'furlong'],
+        ['mi', 'mi']
+      ]
+    };
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function svgEl(tag, attrs = {}, text = '') {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [key, value] of Object.entries(attrs)) {
+        if (value != null) el.setAttribute(key, value);
+      }
+      if (text) el.textContent = text;
+      return el;
+    }
+
+    function clearOverlay() {
+      overlaySvg.replaceChildren();
+    }
+
+    function syncStageSize() {
+      const w = canvas.width * zoom;
+      const h = canvas.height * zoom;
+
+      stageSurface.style.width = w + 'px';
+      stageSurface.style.height = h + 'px';
+
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+
+      overlaySvg.setAttribute('width', String(canvas.width));
+      overlaySvg.setAttribute('height', String(canvas.height));
+      overlaySvg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+      overlaySvg.style.width = w + 'px';
+      overlaySvg.style.height = h + 'px';
+    }
+
+    function populateUnitDropdown() {
+      const system = unitSystemInput.value;
+      const previous = unitInput.value;
+      unitInput.innerHTML = '';
+
+      for (const [value, label] of unitsBySystem[system]) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        unitInput.appendChild(option);
+      }
+
+      const values = unitsBySystem[system].map(u => u[0]);
+      unitInput.value = values.includes(previous) ? previous : values[0];
+    }
+
+    function cloneLine(line) {
+      if (!line) return null;
+      return {
+        a: { x: line.a.x, y: line.a.y },
+        b: { x: line.b.x, y: line.b.y }
+      };
+    }
+
+    function snapshotState() {
+      return {
+        scaleLine: cloneLine(scaleLine),
+        measures: measures.map(cloneLine)
+      };
+    }
+
+    function restoreState(state) {
+      scaleLine = cloneLine(state.scaleLine);
+      measures = state.measures.map(cloneLine);
+      selected = null;
+      updateMeasurementsList();
+      redraw();
+    }
+
+    function pushUndo() {
+      undoStack.push(snapshotState());
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack = [];
+    }
+
+    function undo() {
+      if (!undoStack.length) return;
+      redoStack.push(snapshotState());
+      restoreState(undoStack.pop());
+      statusEl.textContent = 'Undo.';
+    }
+
+    function redo() {
+      if (!redoStack.length) return;
+      undoStack.push(snapshotState());
+      restoreState(redoStack.pop());
+      statusEl.textContent = 'Redo.';
+    }
+
+    function clearMeasurements() {
+      if (!measures.length) return;
+      pushUndo();
+      measures = [];
+      selected = null;
+      updateMeasurementsList();
+      redraw();
+      statusEl.textContent = 'Measurements cleared.';
+    }
+
+    function clearAll() {
+      pushUndo();
+      hasImage = false;
+      img = new Image();
+      scaleLine = null;
+      measures = [];
+      selected = null;
+      imageInput.value = '';
+      canvas.width = 900;
+      canvas.height = 600;
+      zoom = 1;
+      syncStageSize();
+      setMode('scale');
+      updateMeasurementsList();
+      redraw();
+      statusEl.textContent = 'Cleared all.';
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      selectBtn.classList.toggle('active', mode === 'select');
+      scaleBtn.classList.toggle('active', mode === 'scale');
+      measureBtn.classList.toggle('active', mode === 'measure');
+
+      if (mode === 'select') {
+        statusEl.textContent = 'Select lines.';
+      } else if (mode === 'scale') {
+        statusEl.textContent = 'Draw known scale length.';
+      } else {
+        statusEl.textContent = 'Draw measurement length.';
+      }
+    }
+
+    function applyZoom() {
+      syncStageSize();
+      redraw();
+    }
+
+    function setZoom(nextZoom, clientX, clientY) {
+      const oldZoom = zoom;
+      const newZoom = Math.min(8, Math.max(0.05, nextZoom));
+      if (newZoom === oldZoom) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const imageX = (clientX - rect.left) / oldZoom;
+      const imageY = (clientY - rect.top) / oldZoom;
+
+      zoom = newZoom;
+      syncStageSize();
+
+      const newRect = canvas.getBoundingClientRect();
+      const newClientX = newRect.left + imageX * zoom;
+      const newClientY = newRect.top + imageY * zoom;
+
+      stageWrap.scrollLeft += newClientX - clientX;
+      stageWrap.scrollTop += newClientY - clientY;
+
+      redraw();
+      statusEl.textContent = `Zoom: ${(zoom * 100).toFixed(0)}%`;
+    }
+
+    function getMousePos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+        y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function distance(a, b) {
+      return Math.hypot(b.x - a.x, b.y - a.y);
+    }
+
+    function pxToUnit(px) {
+      if (!scaleLine) return null;
+      const scalePx = distance(scaleLine.a, scaleLine.b);
+      const known = Number(knownLengthInput.value);
+      if (!scalePx || !known) return null;
+      return px * known / scalePx;
+    }
+
+    function unitToPx(value) {
+      if (!scaleLine) return null;
+      const scalePx = distance(scaleLine.a, scaleLine.b);
+      const known = Number(knownLengthInput.value);
+      if (!scalePx || !known || !value) return null;
+      return value * scalePx / known;
+    }
+
+    function niceNumber(value) {
+      if (!Number.isFinite(value) || value <= 0) return 1;
+
+      const exponent = Math.floor(Math.log10(value));
+      const fraction = value / Math.pow(10, exponent);
+      let niceFraction;
+
+      if (fraction <= 1) niceFraction = 1;
+      else if (fraction <= 2) niceFraction = 2;
+      else if (fraction <= 5) niceFraction = 5;
+      else niceFraction = 10;
+
+      return niceFraction * Math.pow(10, exponent);
+    }
+
+    function inferGridSizeFromScale(force = false) {
+      if (!force && gridSizeUserEdited) return;
+      if (!scaleLine) return;
+
+      const scalePx = distance(scaleLine.a, scaleLine.b);
+      const known = Number(knownLengthInput.value);
+      if (!scalePx || !known) return;
+
+      const targetGridPx = 80;
+      const unitsPerPx = known / scalePx;
+      const inferred = niceNumber(targetGridPx * unitsPerPx);
+      gridSizeInput.value = String(inferred);
+    }
+
+    function snapMeasurementPointToGrid(point) {
+      if (!gridSnapEnabledInput.checked || !scaleLine) return point;
+
+      const gridSize = Number(gridSizeInput.value);
+      const pxSpacing = unitToPx(gridSize);
+      if (!pxSpacing || pxSpacing <= 0) return point;
+
+      const originX = scaleLine.a.x;
+      const originY = scaleLine.a.y;
+
+      return {
+        x: originX + Math.round((point.x - originX) / pxSpacing) * pxSpacing,
+        y: originY + Math.round((point.y - originY) / pxSpacing) * pxSpacing
+      };
+    }
+
+    function snapPoint(start, current, evt) {
+      const dx = current.x - start.x;
+      const dy = current.y - start.y;
+      const len = Math.hypot(dx, dy);
+
+      if (!len) return mode === 'measure' ? snapMeasurementPointToGrid(current) : current;
+
+      let snapped = current;
+
+      if (evt && evt.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          snapped = { x: current.x, y: start.y };
+        } else {
+          snapped = { x: start.x, y: current.y };
+        }
+
+        return mode === 'measure' ? snapMeasurementPointToGrid(snapped) : snapped;
+      }
+
+      if (angleSnapEnabledInput.checked) {
+        const stepDeg = Number(angleSnapStepInput.value);
+
+        if (Number.isFinite(stepDeg) && stepDeg > 0) {
+          const stepRad = stepDeg * Math.PI / 180;
+          const angle = Math.atan2(dy, dx);
+          const snappedAngle = Math.round(angle / stepRad) * stepRad;
+
+          snapped = {
+            x: start.x + Math.cos(snappedAngle) * len,
+            y: start.y + Math.sin(snappedAngle) * len
+          };
+        }
+      }
+
+      return mode === 'measure' ? snapMeasurementPointToGrid(snapped) : snapped;
+    }
+
+    function formatLength(value) {
+      const unit = unitInput.value.trim() || 'units';
+      return `${value.toFixed(3)} ${unit}`;
+    }
+
+    function distanceToSegment(p, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lenSq = dx * dx + dy * dy;
+      if (!lenSq) return distance(p, a);
+
+      let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+
+      return distance(p, {
+        x: a.x + t * dx,
+        y: a.y + t * dy
+      });
+    }
+
+    function hitTestLine(p) {
+      const tolerance = Math.max(5, 9 / zoom);
+      let best = null;
+      let bestDist = Infinity;
+
+      if (scaleLine) {
+        const d = distanceToSegment(p, scaleLine.a, scaleLine.b);
+        if (d < tolerance && d < bestDist) {
+          best = { type: 'scale' };
+          bestDist = d;
+        }
+      }
+
+      measures.forEach((line, index) => {
+        const d = distanceToSegment(p, line.a, line.b);
+        if (d < tolerance && d < bestDist) {
+          best = { type: 'measure', index };
+          bestDist = d;
+        }
+      });
+
+      return best;
+    }
+    function hitTestEndpoint(p) {
+    const tolerance = Math.max(6, 11 / zoom);
+    let best = null;
+    let bestDist = Infinity;
+
+    function checkPoint(type, index, endpoint, point) {
+      const d = distance(p, point);
+      if (d < tolerance && d < bestDist) {
+        best = { type, index, endpoint };
+        bestDist = d;
+      }
+    }
+
+    if (scaleLine) {
+      checkPoint('scale', null, 'a', scaleLine.a);
+      checkPoint('scale', null, 'b', scaleLine.b);
+    }
+
+    measures.forEach((line, index) => {
+      checkPoint('measure', index, 'a', line.a);
+      checkPoint('measure', index, 'b', line.b);
+    });
+
+    return best;
+  }
+  
+    function isSelected(type, index) {
+      if (!selected) return false;
+      if (type === 'scale') return selected.type === 'scale';
+      return selected.type === 'measure' && selected.index === index;
+    }
+
+    function deleteSelected() {
+      if (!selected) return;
+      pushUndo();
+
+      if (selected.type === 'scale') {
+        scaleLine = null;
+      }
+
+      if (selected.type === 'measure') {
+        measures.splice(selected.index, 1);
+      }
+
+      selected = null;
+      updateMeasurementsList();
+      redraw();
+      statusEl.textContent = 'Deleted selected line.';
+    }
+
+    function drawImageLayer() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (hasImage) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.font = '13px Tahoma, Arial, sans-serif';
+        ctx.fillText('No image loaded. Upload, paste, or drop an image.', 12, 22);
+      }
+    }
+
+    function drawPoint(p, color, selectedLine) {
+      const r = selectedLine
+        ? Math.max(2.5, Math.min(5, 5 / zoom))
+        : Math.max(1.4, Math.min(3, 3 / zoom));
+
+      overlaySvg.appendChild(svgEl('circle', {
+        cx: p.x,
+        cy: p.y,
+        r,
+        fill: selectedLine ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+        stroke: color,
+        'stroke-width': Math.max(1, 1.25 / zoom),
+        'vector-effect': 'non-scaling-stroke'
+      }));
+    }
+
+    function drawLabel(line, label) {
+      const mx = (line.a.x + line.b.x) / 2;
+      const my = (line.a.y + line.b.y) / 2;
+      const dx = line.b.x - line.a.x;
+      const dy = line.b.y - line.a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const screenLen = len * zoom;
+      const offsetScreen = screenLen < 80 ? 62 : 36;
+      const offset = offsetScreen / zoom;
+      const lx = mx + nx * offset;
+      const ly = my + ny * offset;
+
+      const fontSize = Math.max(8, 13 / zoom);
+      const pad = 4 / zoom;
+      const boxH = 18 / zoom;
+
+      ctx.save();
+      ctx.font = `${fontSize}px Tahoma, Arial, sans-serif`;
+      const textW = ctx.measureText(label).width;
+      ctx.restore();
+
+      const boxW = textW + pad * 2;
+
+      const g = svgEl('g');
+
+      g.appendChild(svgEl('line', {
+        x1: mx,
+        y1: my,
+        x2: lx,
+        y2: ly,
+        stroke: 'rgba(0,0,0,0.45)',
+        'stroke-width': Math.max(0.5, 1 / zoom),
+        'vector-effect': 'non-scaling-stroke'
+      }));
+
+      g.appendChild(svgEl('rect', {
+        x: lx - boxW / 2,
+        y: ly - boxH / 2,
+        width: boxW,
+        height: boxH,
+        fill: 'rgba(255,255,225,0.86)',
+        stroke: '#555',
+        'stroke-width': Math.max(0.5, 1 / zoom),
+        'vector-effect': 'non-scaling-stroke'
+      }));
+
+      g.appendChild(svgEl('text', {
+        x: lx,
+        y: ly,
+        'text-anchor': 'middle',
+        'dominant-baseline': 'middle',
+        'font-family': 'Tahoma, Arial, sans-serif',
+        'font-size': fontSize,
+        fill: '#000'
+      }, label));
+
+      overlaySvg.appendChild(g);
+    }
+
+    function drawLine(line, color, label, width, selectedLine) {
+      overlaySvg.appendChild(svgEl('line', {
+        x1: line.a.x,
+        y1: line.a.y,
+        x2: line.b.x,
+        y2: line.b.y,
+        stroke: color,
+        'stroke-width': selectedLine ? Math.max(width + 1, 3 / zoom) : width,
+        'stroke-linecap': 'round',
+        'vector-effect': 'non-scaling-stroke'
+      }));
+
+      if (selectedLine) {
+        overlaySvg.appendChild(svgEl('line', {
+          x1: line.a.x,
+          y1: line.a.y,
+          x2: line.b.x,
+          y2: line.b.y,
+          stroke: '#000',
+          'stroke-width': Math.max(0.8, 1 / zoom),
+          'stroke-linecap': 'round',
+          'stroke-dasharray': `${6 / zoom} ${4 / zoom}`,
+          'vector-effect': 'non-scaling-stroke'
+        }));
+      }
+
+      drawPoint(line.a, color, selectedLine);
+      drawPoint(line.b, color, selectedLine);
+      if (label) drawLabel(line, label);
+    }
+
+    function drawMeasurementGrid() {
+    if (!gridEnabledInput.checked || !scaleLine) return;
+
+    const gridSize = Number(gridSizeInput.value);
+    const pxSpacing = unitToPx(gridSize);
+    if (!pxSpacing || pxSpacing <= 0) return;
+
+    const screenSpacing = pxSpacing * zoom;
+
+    // Hide only when the grid would be too dense on screen, not when it is small in image pixels.
+    if (screenSpacing < 4) return;
+
+    // Safety cap so tiny grid sizes do not create thousands of SVG lines and freeze the page.
+    const estimatedLineCount = (canvas.width / pxSpacing) + (canvas.height / pxSpacing);
+    if (estimatedLineCount > 2500) {
+      statusEl.textContent = 'Grid hidden: grid size too small for current zoom. Zoom in more or increase grid size.';
+      return;
+    }
+
+    const group = svgEl('g', {
+      stroke: 'rgba(0,0,0,0.18)',
+      'stroke-width': 1,
+      'vector-effect': 'non-scaling-stroke',
+      'shape-rendering': 'crispEdges'
+    });
+
+    const startX = ((scaleLine.a.x % pxSpacing) + pxSpacing) % pxSpacing;
+    const startY = ((scaleLine.a.y % pxSpacing) + pxSpacing) % pxSpacing;
+
+    for (let x = startX; x <= canvas.width; x += pxSpacing) {
+      group.appendChild(svgEl('line', {
+        x1: x,
+        y1: 0,
+        x2: x,
+        y2: canvas.height
+      }));
+    }
+
+    for (let y = startY; y <= canvas.height; y += pxSpacing) {
+      group.appendChild(svgEl('line', {
+        x1: 0,
+        y1: y,
+        x2: canvas.width,
+        y2: y
+      }));
+    }
+
+    overlaySvg.appendChild(group);
+  }
+
+    function redraw() {
+      drawImageLayer();
+      clearOverlay();
+
+      if (hasImage) {
+        drawMeasurementGrid();
+      }
+
+      if (scaleLine) {
+        const real = Number(knownLengthInput.value);
+        const unit = unitInput.value.trim() || 'units';
+        drawLine(
+          scaleLine,
+          '#d4a000',
+          `${real} ${unit}`,
+          Math.max(1, 2.2 / zoom),
+          isSelected('scale')
+        );
+      }
+
+      measures.forEach((m, i) => {
+        const px = distance(m.a, m.b);
+        const real = pxToUnit(px);
+        const label = real == null ? `${px.toFixed(1)} px` : formatLength(real);
+        drawLine(
+          m,
+          '#0066cc',
+          `M${i + 1}: ${label}`,
+          Math.max(1, 2 / zoom),
+          isSelected('measure', i)
+        );
+      });
+
+      if (isDragging && dragStart && dragCurrent) {
+        const px = distance(dragStart, dragCurrent);
+        const real = pxToUnit(px);
+        const label = mode === 'scale'
+          ? `${px.toFixed(1)} px`
+          : real == null
+            ? `${px.toFixed(1)} px`
+            : formatLength(real);
+
+        drawLine(
+          { a: dragStart, b: dragCurrent },
+          mode === 'scale' ? '#d4a000' : '#0066cc',
+          label,
+          Math.max(1, 2 / zoom),
+          false
+        );
+      }
+
+      updateInfo();
+    }
+
+    function updateInfo() {
+      if (!scaleLine) {
+        scaleInfo.textContent = 'No scale line.';
+        return;
+      }
+
+      const px = distance(scaleLine.a, scaleLine.b);
+      const known = Number(knownLengthInput.value);
+      const unit = unitInput.value.trim() || 'units';
+
+      if (!known) {
+        scaleInfo.textContent = `${px.toFixed(2)} px. Enter known length.`;
+        return;
+      }
+
+      scaleInfo.textContent = `${px.toFixed(2)} px = ${known} ${unit}; 1 px = ${(known / px).toFixed(6)} ${unit}`;
+    }
+
+    function updateMeasurementsList() {
+      measurementsDiv.innerHTML = '';
+
+      if (!measures.length) {
+        measurementsDiv.innerHTML = '<p class="small">No measurements.</p>';
+        return;
+      }
+
+      measures.forEach((m, i) => {
+        const px = distance(m.a, m.b);
+        const real = pxToUnit(px);
+        const div = document.createElement('div');
+        div.className = 'measurement';
+
+        if (isSelected('measure', i)) {
+          div.style.outline = '2px solid #0066cc';
+        }
+
+        div.innerHTML = `<strong>M${i + 1}</strong>${px.toFixed(2)} px<br>${real == null ? 'No scale set' : formatLength(real)}`;
+
+        div.addEventListener('click', () => {
+          selected = { type: 'measure', index: i };
+          updateMeasurementsList();
+          redraw();
+        });
+
+        measurementsDiv.appendChild(div);
+      });
+    }
+
+    function loadImageFile(file) {
+      if (!file) {
+        statusEl.textContent = 'No file received.';
+        return;
+      }
+
+      if (!file.type || !file.type.startsWith('image/')) {
+        statusEl.textContent = 'Item was not an image.';
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      img = new Image();
+
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        zoom = 1;
+        syncStageSize();
+        hasImage = true;
+        scaleLine = null;
+        measures = [];
+        selected = null;
+        undoStack = [];
+        redoStack = [];
+        URL.revokeObjectURL(url);
+        setMode('scale');
+        updateMeasurementsList();
+        redraw();
+        statusEl.textContent = 'Image loaded. Draw known scale length.';
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        statusEl.textContent = 'Could not load image.';
+      };
+
+      img.src = url;
+    }
+
+    function loadImageFromDataTransfer(dt) {
+      if (!dt) return false;
+
+      if (dt.files && dt.files.length) {
+        for (const file of dt.files) {
+          if (file.type && file.type.startsWith('image/')) {
+            loadImageFile(file);
+            return true;
+          }
+        }
+      }
+
+      if (dt.items && dt.items.length) {
+        for (const item of dt.items) {
+          if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) {
+              loadImageFile(file);
+              return true;
+            }
+          }
+        }
+      }
+
+      statusEl.textContent = 'No image found in paste/drop.';
+      return false;
+    }
+
+    async function pasteImageFromClipboardApi() {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        statusEl.textContent = 'Clipboard API unavailable. Try Ctrl+V on the page.';
+        return;
+      }
+
+      try {
+        const items = await navigator.clipboard.read();
+
+        for (const item of items) {
+          const imageType = item.types.find(type => type.startsWith('image/'));
+
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            loadImageFile(new File([blob], 'clipboard-image.png', { type: imageType }));
+            statusEl.textContent = 'Pasted image from clipboard.';
+            return;
+          }
+        }
+
+        statusEl.textContent = 'Clipboard contains no image.';
+      } catch (err) {
+        console.warn('Clipboard API paste failed:', err);
+        statusEl.textContent = 'Clipboard paste blocked. Use Ctrl+V on the page.';
+      }
+    }
+
+    function isVerticalLayout() {
+      return window.matchMedia('(max-width: 850px)').matches;
+    }
+
+    function updateSidebarToggleIcon() {
+      const hidden = mainLayout.classList.contains('sidebar-hidden');
+
+      if (isVerticalLayout()) {
+        sidebarToggleIcon.textContent = hidden ? '⌃' : '⌄';
+        sidebarToggle.title = hidden ? 'Show menu' : 'Hide menu';
+      } else {
+        sidebarToggleIcon.textContent = hidden ? '‹' : '›';
+        sidebarToggle.title = hidden ? 'Show side panel' : 'Hide side panel';
+      }
+    }
+
+    function toggleSidebar() {
+      mainLayout.classList.toggle('sidebar-hidden');
+      updateSidebarToggleIcon();
+    }
+
+    function setSidebarWidth(width) {
+      const clamped = Math.max(190, Math.min(720, width));
+      mainLayout.style.setProperty('--side-width', `${clamped}px`);
+    }
+
+    function setBottomPanelHeight(height) {
+      const maxHeight = Math.max(160, window.innerHeight - 150);
+      const clamped = Math.max(110, Math.min(maxHeight, height));
+      mainLayout.style.setProperty('--bottom-height', `${clamped}px`);
+    }
+
+    imageInput.addEventListener('change', () => {
+      loadImageFile(imageInput.files[0]);
+    });
+
+    pasteBtn.addEventListener('click', pasteImageFromClipboardApi);
+    selectBtn.addEventListener('click', () => setMode('select'));
+    scaleBtn.addEventListener('click', () => setMode('scale'));
+    measureBtn.addEventListener('click', () => setMode('measure'));
+    deleteSelectedBtn.addEventListener('click', deleteSelected);
+    clearMeasuresBtn.addEventListener('click', clearMeasurements);
+    resetBtn.addEventListener('click', clearAll);
+    sidebarToggle.addEventListener('click', toggleSidebar);
+
+    sideResizeHandle.addEventListener('mousedown', evt => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      isResizingSidebar = true;
+      document.body.classList.add('resizing-sidebar');
+    });
+
+    window.addEventListener('mousemove', evt => {
+      if (!isResizingSidebar) return;
+      const rect = mainLayout.getBoundingClientRect();
+
+      if (isVerticalLayout()) {
+        setBottomPanelHeight(rect.bottom - evt.clientY);
+      } else {
+        setSidebarWidth(rect.right - evt.clientX);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizingSidebar) {
+        isResizingSidebar = false;
+        document.body.classList.remove('resizing-sidebar');
+      }
+    });
+
+    canvas.addEventListener('mousedown', evt => {
+    if (evt.button === 1 && evt.shiftKey) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      isPanning = true;
+      panStart = { x: evt.clientX, y: evt.clientY };
+      panScrollStart = { x: stageWrap.scrollLeft, y: stageWrap.scrollTop };
+      stageSurface.style.cursor = 'grabbing';
+      return;
+    }
+
+    if (!hasImage || evt.button !== 0) return;
+
+    const p = getMousePos(evt);
+
+    if (mode === 'select') {
+      const endpointHit = hitTestEndpoint(p);
+
+      if (endpointHit) {
+        pushUndo();
+        endpointDrag = endpointHit;
+
+        if (endpointHit.type === 'scale') {
+          selected = { type: 'scale' };
+        } else {
+          selected = { type: 'measure', index: endpointHit.index };
+        }
+
+        updateMeasurementsList();
+        redraw();
+        statusEl.textContent = 'Dragging endpoint.';
+        return;
+      }
+
+      const lineHit = hitTestLine(p);
+
+      if (lineHit) {
+        selected = lineHit;
+        updateMeasurementsList();
+        redraw();
+        statusEl.textContent = selected.type === 'scale'
+          ? 'Scale selected.'
+          : `M${selected.index + 1} selected.`;
+        return;
+      }
+
+      selected = null;
+      updateMeasurementsList();
+      redraw();
+      return;
+    }
+
+    selected = null;
+    isDragging = true;
+    dragStart = mode === 'measure' ? snapMeasurementPointToGrid(p) : p;
+    dragCurrent = dragStart;
+    redraw();
+  });
+
+    canvas.addEventListener('mousemove', evt => {
+    if (isPanning && panStart && panScrollStart) {
+      evt.preventDefault();
+      stageWrap.scrollLeft = panScrollStart.x - (evt.clientX - panStart.x);
+      stageWrap.scrollTop = panScrollStart.y - (evt.clientY - panStart.y);
+      return;
+    }
+
+    if (endpointDrag) {
+      let p = getMousePos(evt);
+
+      if (endpointDrag.type === 'measure') {
+        p = snapMeasurementPointToGrid(p);
+      }
+
+      if (endpointDrag.type === 'scale') {
+        scaleLine[endpointDrag.endpoint] = p;
+        inferGridSizeFromScale();
+      } else {
+        measures[endpointDrag.index][endpointDrag.endpoint] = p;
+      }
+
+      updateMeasurementsList();
+      redraw();
+      return;
+    }
+
+    if (!isDragging) return;
+    dragCurrent = snapPoint(dragStart, getMousePos(evt), evt);
+    redraw();
+  });
+
+    window.addEventListener('mouseup', () => {
+    if (isPanning) {
+      isPanning = false;
+      panStart = null;
+      panScrollStart = null;
+      stageSurface.style.cursor = 'crosshair';
+      return;
+    }
+
+    if (endpointDrag) {
+      endpointDrag = null;
+      updateMeasurementsList();
+      redraw();
+      statusEl.textContent = 'Endpoint moved.';
+      return;
+    }
+
+    if (!isDragging || !dragStart || !dragCurrent) return;
+
+    const line = { a: dragStart, b: dragCurrent };
+
+    if (distance(line.a, line.b) > 2) {
+      pushUndo();
+
+      if (mode === 'scale') {
+        scaleLine = line;
+        inferGridSizeFromScale();
+        selected = { type: 'scale' };
+        setMode('select');
+        statusEl.textContent = 'Scale set.';
+      } else {
+        measures.push(line);
+        selected = { type: 'measure', index: measures.length - 1 };
+        setMode('measure');
+        updateMeasurementsList();
+        statusEl.textContent = `M${measures.length} added.`;
+      }
+    }
+
+    isDragging = false;
+    dragStart = null;
+    dragCurrent = null;
+    redraw();
+  });
+
+    knownLengthInput.addEventListener('input', () => {
+      inferGridSizeFromScale();
+      updateMeasurementsList();
+      redraw();
+    });
+
+    unitSystemInput.addEventListener('change', () => {
+      populateUnitDropdown();
+      updateMeasurementsList();
+      redraw();
+    });
+
+    unitInput.addEventListener('change', () => {
+      updateMeasurementsList();
+      redraw();
+    });
+
+    angleSnapEnabledInput.addEventListener('change', redraw);
+    angleSnapStepInput.addEventListener('input', redraw);
+    gridEnabledInput.addEventListener('change', () => {
+      inferGridSizeFromScale();
+      redraw();
+    });
+    gridSnapEnabledInput.addEventListener('change', () => {
+      inferGridSizeFromScale();
+      redraw();
+    });
+    gridSizeInput.addEventListener('input', () => {
+      gridSizeUserEdited = true;
+      redraw();
+    });
+
+    document.addEventListener('keydown', evt => {
+      const active = document.activeElement;
+      const tag = active && active.tagName;
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active?.isContentEditable;
+      const key = evt.key.toLowerCase();
+
+      if ((evt.ctrlKey || evt.metaKey) && key === 'v') {
+        return;
+      }
+
+      if (!typing && (evt.ctrlKey || evt.metaKey) && key === 'delete') {
+        evt.preventDefault();
+        clearMeasurements();
+        return;
+      }
+
+      if (!typing && (evt.ctrlKey || evt.metaKey) && key === 'backspace') {
+        evt.preventDefault();
+        clearAll();
+        return;
+      }
+
+      if (!typing && key === 'v') {
+        evt.preventDefault();
+        setMode('select');
+        return;
+      }
+
+      if (!typing && key === 'm') {
+        evt.preventDefault();
+        setMode('measure');
+        return;
+      }
+
+      if (!typing && key === 's') {
+        evt.preventDefault();
+        setMode('scale');
+        return;
+      }
+
+      if (!typing && (key === 'delete' || key === 'backspace')) {
+        evt.preventDefault();
+        deleteSelected();
+        return;
+      }
+
+      if ((evt.ctrlKey || evt.metaKey) && key === 'z' && !evt.shiftKey) {
+        evt.preventDefault();
+        undo();
+        return;
+      }
+
+      if ((evt.ctrlKey || evt.metaKey) && (key === 'y' || (key === 'z' && evt.shiftKey))) {
+        evt.preventDefault();
+        redo();
+      }
+    });
+
+    document.addEventListener('paste', evt => {
+      if (loadImageFromDataTransfer(evt.clipboardData)) {
+        evt.preventDefault();
+        statusEl.textContent = 'Pasted image from clipboard.';
+      }
+    });
+
+    canvas.addEventListener('auxclick', evt => {
+      if (evt.button === 1) {
+        evt.preventDefault();
+        evt.stopPropagation();
+      }
+    });
+
+    function wheelZoom(evt) {
+      if (!evt.ctrlKey) return;
+      evt.preventDefault();
+      evt.stopPropagation();
+      const factor = evt.deltaY < 0 ? 1.12 : 1 / 1.12;
+      setZoom(zoom * factor, evt.clientX, evt.clientY);
+    }
+
+    canvas.addEventListener('wheel', wheelZoom, { passive: false });
+    stageWrap.addEventListener('wheel', wheelZoom, { passive: false });
+
+    stageWrap.addEventListener('mousedown', evt => {
+      if (evt.button === 1 && evt.shiftKey) {
+        evt.preventDefault();
+        evt.stopPropagation();
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(type => {
+      window.addEventListener(type, evt => {
+        evt.preventDefault();
+        stageWrap.classList.add('dragover');
+        statusEl.textContent = 'Drop image to load.';
+      });
+    });
+
+    ['dragleave', 'dragend'].forEach(type => {
+      window.addEventListener(type, evt => {
+        if (evt.target === document || evt.target === document.body || evt.target === stageWrap) {
+          stageWrap.classList.remove('dragover');
+          statusEl.textContent = hasImage ? 'Ready.' : 'Upload, paste, or drop image.';
+        }
+      });
+    });
+
+    window.addEventListener('drop', evt => {
+      evt.preventDefault();
+      stageWrap.classList.remove('dragover');
+      const loaded = loadImageFromDataTransfer(evt.dataTransfer);
+      if (!loaded) statusEl.textContent = 'Dropped item was not an image.';
+    });
+
+    window.addEventListener('resize', updateSidebarToggleIcon);
+
+    populateUnitDropdown();
+    updateSidebarToggleIcon();
+    updateMeasurementsList();
+    syncStageSize();
+    redraw();
+  </script>
+</body>
+</html>
