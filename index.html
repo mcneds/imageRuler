@@ -229,72 +229,80 @@
     }
 
     @media (max-width: 850px) {
-    main {
-      --bottom-height: 300px;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr) var(--bottom-height);
-    }
-
-    main.sidebar-hidden {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr) 0px;
-    }
-
-    aside {
-      border-left: none;
-      border-top: 1px solid #888;
-      max-height: none;
-    }
-
-    main.sidebar-hidden aside {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    #sideResizeHandle {
-      display: block;
-      left: 0;
-      right: 0;
-      top: calc(100% - var(--bottom-height) - 3px);
-      bottom: auto;
-      width: auto;
-      height: 6px;
-      cursor: row-resize;
-    }
-
-    main.sidebar-hidden #sideResizeHandle {
-      display: none;
-    }
-
-    #sidebarToggle {
-      position: fixed;
-      left: 50%;
-      right: auto;
-      bottom: calc(var(--bottom-height) - 1px);
-      top: auto;
-      width: 96px;
-      height: 26px;
-      transform: translateX(-50%);
-      z-index: 50;
-      border-radius: 4px 4px 0 0;
-    }
-
-    main.sidebar-hidden #sidebarToggle {
-      position: fixed;
-      left: 50%;
-      right: auto;
-      bottom: 0;
-      top: auto;
-      transform: translateX(-50%);
-      z-index: 50;
-      border-radius: 4px 4px 0 0;
-    }
-
-    #sidebarToggle span {
-      font-size: 18px;
-      line-height: 18px;
-    }
+  main {
+    --bottom-height: 300px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) var(--bottom-height);
   }
+
+  main.sidebar-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 0px;
+  }
+
+  aside {
+    border-left: none;
+    border-top: 1px solid #888;
+    max-height: none;
+  }
+
+  main.sidebar-hidden aside {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #sideResizeHandle {
+    display: block;
+    left: 0;
+    right: 0;
+    top: calc(100% - var(--bottom-height) - 9px);
+    bottom: auto;
+    width: auto;
+    height: 18px;
+    cursor: row-resize;
+    z-index: 49;
+    touch-action: none;
+  }
+
+  #sideResizeHandle:hover,
+  body.resizing-sidebar #sideResizeHandle {
+    background: rgba(0,0,0,0.10);
+  }
+
+  main.sidebar-hidden #sideResizeHandle {
+    display: none;
+  }
+
+  #sidebarToggle {
+    position: absolute;
+    left: 50%;
+    right: auto;
+    top: calc(100% - var(--bottom-height) - 26px);
+    bottom: auto;
+    width: 96px;
+    height: 26px;
+    transform: translateX(-50%);
+    z-index: 51;
+    border-radius: 4px 4px 0 0;
+    touch-action: manipulation;
+  }
+
+  main.sidebar-hidden #sidebarToggle {
+    position: absolute;
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+    z-index: 51;
+    border-radius: 4px 4px 0 0;
+  }
+
+  #sidebarToggle span {
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
   </style>
 </head>
 <body>
@@ -1262,30 +1270,50 @@
     resetBtn.addEventListener('click', clearAll);
     sidebarToggle.addEventListener('click', toggleSidebar);
 
-    sideResizeHandle.addEventListener('mousedown', evt => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      isResizingSidebar = true;
-      document.body.classList.add('resizing-sidebar');
-    });
+   sideResizeHandle.addEventListener('pointerdown', evt => {
+    evt.preventDefault();
+    evt.stopPropagation();
 
-    window.addEventListener('mousemove', evt => {
-      if (!isResizingSidebar) return;
-      const rect = mainLayout.getBoundingClientRect();
+    isResizingSidebar = true;
+    document.body.classList.add('resizing-sidebar');
+    sideResizeHandle.setPointerCapture(evt.pointerId);
+  });
 
-      if (isVerticalLayout()) {
-        setBottomPanelHeight(rect.bottom - evt.clientY);
-      } else {
-        setSidebarWidth(rect.right - evt.clientX);
-      }
-    });
+  window.addEventListener('pointermove', evt => {
+    if (!isResizingSidebar) return;
 
-    window.addEventListener('mouseup', () => {
-      if (isResizingSidebar) {
-        isResizingSidebar = false;
-        document.body.classList.remove('resizing-sidebar');
-      }
-    });
+    evt.preventDefault();
+
+    const rect = mainLayout.getBoundingClientRect();
+
+    if (isVerticalLayout()) {
+      setBottomPanelHeight(rect.bottom - evt.clientY);
+    } else {
+      setSidebarWidth(rect.right - evt.clientX);
+    }
+  });
+
+  window.addEventListener('pointerup', evt => {
+    if (!isResizingSidebar) return;
+
+    isResizingSidebar = false;
+    document.body.classList.remove('resizing-sidebar');
+
+    try {
+      sideResizeHandle.releasePointerCapture(evt.pointerId);
+    } catch (_) {}
+  });
+
+  window.addEventListener('pointercancel', evt => {
+    if (!isResizingSidebar) return;
+
+    isResizingSidebar = false;
+    document.body.classList.remove('resizing-sidebar');
+
+    try {
+      sideResizeHandle.releasePointerCapture(evt.pointerId);
+    } catch (_) {}
+  });
 
     canvas.addEventListener('mousedown', evt => {
     if (evt.button === 1 && evt.shiftKey) {
